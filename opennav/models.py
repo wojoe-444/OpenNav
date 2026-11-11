@@ -109,3 +109,36 @@ class RouteResult:
             "comparison_note": self.comparison_note,
             "routes": [route_dict(r) for r in self.routes],
         }
+
+
+def _route_from_dict(d: dict[str, Any]) -> Route:
+    from . import polyline
+
+    steps = [Step(instruction=s["instruction"], distance_m=s["distance_m"], duration_s=s["duration_s"],
+                  static_duration_s=s.get("static_duration_s"), maneuver=s.get("maneuver"), road=s.get("road"),
+                  notes=list(s.get("notes") or [])) for s in d.get("steps", [])]
+    return Route(
+        duration_s=d["duration_s"], distance_m=d["distance_m"], summary=d.get("summary", ""),
+        static_duration_s=d.get("static_duration_s"), labels=list(d.get("labels") or []),
+        warnings=list(d.get("warnings") or []), steps=steps,
+        geometry=polyline.decode(d["encoded_polyline"]) if d.get("encoded_polyline") else [],
+        congestion=[CongestedSegment(**c) for c in d.get("congestion") or []],
+        traffic_note=d.get("traffic_note"),
+    )
+
+
+def result_from_dict(d: dict[str, Any], request: RouteRequest | None = None) -> RouteResult:
+    if request is None:
+        rq = d["request"]
+        request = RouteRequest(origin=rq["origin"], destination=rq["destination"],
+                               departure=datetime.fromisoformat(rq["departure"]) if rq.get("departure") else None,
+                               alternatives=rq.get("alternatives", True))
+    return RouteResult(
+        request=request, provider=d["provider"], routes=[_route_from_dict(r) for r in d["routes"]],
+        origin_resolved=d.get("origin_resolved"), destination_resolved=d.get("destination_resolved"),
+        fetched_at=datetime.fromisoformat(d["fetched_at"]) if d.get("fetched_at") else None,
+        comparison_note=d.get("comparison_note"),
+    )
+
+
+RouteResult.from_dict = staticmethod(result_from_dict)  # type: ignore[attr-defined]

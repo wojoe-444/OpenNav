@@ -3,6 +3,8 @@
   opennav route "ORIGIN" "DESTINATION" --depart "wed 08:00" [--provider google|osrm]
   opennav case run smyrna-to-atl [--refresh] [--json out.json] [--geojson out.geojson] [--map out.html]
   opennav case list
+  opennav score [CASE ...] [-v]          compare our engine with stored Google responses
+  opennav data build [--region atlanta]  download OSM road data (Overture) and build the graph
 """
 
 from __future__ import annotations
@@ -66,8 +68,50 @@ def main(argv: list[str] | None = None) -> int:
     cr.add_argument("--refresh", action="store_true", help="call the provider even if a stored response exists")
     _add_output_args(cr)
 
+    sc = sub.add_parser("score", help="score our engine against stored ground truth")
+    sc.add_argument("cases", nargs="*", help="case ids (default: all)")
+    sc.add_argument("-v", "--verbose", action="store_true", help="print steps side by side")
+    sc.add_argument("--own-geocoder", action="store_true", help="geocode with our geocoder instead of Google's points")
+    sc.add_argument("--no-traffic", action="store_true", help="disable the traffic model")
+
+    cal = sub.add_parser("calibrate", help="fit speeds, delays and traffic to stored ground truth")
+    cal.add_argument("cases", nargs="*")
+    cal.add_argument("--dry-run", action="store_true", help="do not write opennav/engine/params.json")
+
+    dt = sub.add_parser("data", help="road data management")
+    dsub = dt.add_subparsers(dest="data_cmd", required=True)
+    db = dsub.add_parser("build", help="download (if needed) and build a region's road graph")
+    db.add_argument("--region", default="atlanta")
+    db.add_argument("--refresh", action="store_true", help="re-download the road data")
+    db.add_argument("--addresses", action="store_true", help="also download address points for geocoding")
+
     args = ap.parse_args(argv)
     try:
+        if args.cmd == "score":
+            from .bench import run_all
+            from .providers import OpenNavProvider
+            res = run_all(args.cases or None, verbose=args.verbose, own_geocoder=args.own_geocoder,
+                          provider=OpenNavProvider(traffic_model=not args.no_traffic))
+            return 0 if res else 1
+
+        if args.cmd == "calibrate":
+            from .calibrate import calibrate
+            calibrate(args.cases or None, save=not args.dry_run)
+            return 0
+
+        if args.cmd == "data":
+            from .data import overture
+            from .data.regions import REGIONS, region_dir
+            from .engine import ensure_region
+            d = region_dir(args.region)
+            if args.refresh:
+                for f in ("segments.parquet", "graph.pkl"):
+                    (d / f).unlink(missing_ok=True)
+            print(f"graph ready: {ensure_region(args.region)}")
+            if args.addresses:
+                overture.fetch_addresses(REGIONS[args.region], d / "addresses.parquet")
+            return 0
+
         if args.cmd == "route":
             req = RouteRequest(
                 origin=args.origin,
@@ -84,7 +128,8 @@ def main(argv: list[str] | None = None) -> int:
 
         case = Case.load(args.case_id)
         result, path, fetched = run_case(case, get_provider(args.provider, **_provider_kwargs(args)), refresh=args.refresh)
-        print(f"[{'fetched and stored' if fetched else 'using stored'} response: {path}]", file=sys.stderr)
+        if path is not None:
+            print(f"[{'fetched and stored' if fetched else 'using stored'} response: {path}]", file=sys.stderr)
         _emit(result, args)
         if case.observed and args.format == "text":
             print("\nCheck against reference:")

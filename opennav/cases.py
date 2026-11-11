@@ -84,6 +84,15 @@ def stored_payloads(case_id: str, provider: str) -> list[Path]:
     return sorted((truth_dir() / case_id).glob(f"{provider}__*.json"))
 
 
+def latest_truth(case: Case, provider: RoutingProvider) -> tuple[RouteResult, dict[str, Any], Path] | None:
+    """Newest stored ground-truth response for a case, parsed, or None."""
+    existing = stored_payloads(case.id, provider.name)
+    if not existing:
+        return None
+    raw = json.loads(existing[-1].read_text())
+    return provider.parse(_request_from_payload(case, raw), raw), raw, existing[-1]
+
+
 def _request_from_payload(case: Case, raw: dict[str, Any]) -> RouteRequest:
     """Rebuild the request actually sent, so a cached answer is labelled with its real departure time."""
     dep = raw.get("departure")
@@ -95,7 +104,12 @@ def _request_from_payload(case: Case, raw: dict[str, Any]) -> RouteRequest:
 
 
 def run_case(case: Case, provider: RoutingProvider, refresh: bool = False) -> tuple[RouteResult, Path, bool]:
-    """Returns (result, payload_path, fetched_now)."""
+    """Returns (result, payload_path, fetched_now).
+
+    Our own engine is not ground truth: it always runs live and nothing is stored.
+    """
+    if not getattr(provider, "stores_responses", True):
+        return provider.route(case.request()), None, True
     existing = stored_payloads(case.id, provider.name)
     if existing and not refresh:
         path = existing[-1]
