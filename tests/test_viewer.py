@@ -24,6 +24,8 @@ def api_server(tmp_path, monkeypatch):
     static = tmp_path / "static"
     static.mkdir()
     (static / "index.html").write_text("<!doctype html><title>OpenNav</title>")
+    (static / "assets").mkdir()
+    (static / "assets" / "app.js").write_text("export {}")
     httpd = ThreadingHTTPServer(("127.0.0.1", 0), server.make_handler(server.Api(), static))
     threading.Thread(target=httpd.serve_forever, daemon=True).start()
     yield f"http://127.0.0.1:{httpd.server_address[1]}"
@@ -58,3 +60,8 @@ def test_static_falls_back_to_index(api_server):
     assert status == 200 and b"OpenNav" in body
     status, body = _get(f"{api_server}/../../etc/passwd")
     assert b"root:" not in body
+
+
+def test_module_scripts_get_a_javascript_type(api_server):
+    with urllib.request.urlopen(f"{api_server}/assets/app.js") as r:
+        assert r.headers["Content-Type"].startswith("text/javascript")

@@ -29,6 +29,14 @@ from .compare import MODELS, Comparer
 
 STATIC = Path(__file__).resolve().parent / "static"
 
+# Explicit types for the bundle: on Windows, mimetypes reads the registry, which
+# can map .js to text/plain, and browsers refuse to run module scripts served so.
+CONTENT_TYPES = {
+    ".html": "text/html", ".js": "text/javascript", ".mjs": "text/javascript", ".css": "text/css",
+    ".svg": "image/svg+xml", ".json": "application/json", ".png": "image/png",
+    ".woff2": "font/woff2", ".woff": "font/woff",
+}
+
 
 class ApiError(Exception):
     def __init__(self, status: int, message: str):
@@ -112,8 +120,9 @@ def make_handler(api: Api, static_dir: Path = STATIC) -> type[BaseHTTPRequestHan
                 body = (b"The web app is not built. Run `npm install` and `npm run build` in web/, "
                         b"or `npm run dev` there for the dev server.")
                 return self._send(body, "text/plain; charset=utf-8", HTTPStatus.NOT_FOUND)
-            ctype = mimetypes.guess_type(target.name)[0] or "application/octet-stream"
-            if ctype.startswith("text/") or ctype in ("application/javascript", "image/svg+xml"):
+            ctype = (CONTENT_TYPES.get(target.suffix.lower()) or mimetypes.guess_type(target.name)[0]
+                     or "application/octet-stream")
+            if ctype.startswith("text/") or ctype in ("application/json", "image/svg+xml"):
                 ctype += "; charset=utf-8"
             cache = "public, max-age=31536000, immutable" if "/assets/" in path else "no-cache"
             self._send(target.read_bytes(), ctype, HTTPStatus.OK, cache)
