@@ -98,7 +98,7 @@ def google_payload():
         [_line(HOME, I75), _line(I75, AIRPORT_EXIT, 40), _line(AIRPORT_EXIT, AIRPORT)],
         [
             "Turn right onto Lake Park Dr",
-            "Merge onto I-75 S\nContinue onto I-85 S",
+            "Merge onto I-75 S\nParts of this road may be closed at certain times or days",
             "Take exit 72 toward Airport Blvd",
         ],
         duration=2400,
@@ -152,6 +152,8 @@ def test_google_parse(google_payload):
     assert best.warnings == ["This route has restricted usage or private roads."]
     assert len(best.steps) == 3
     assert [s.road for s in best.steps] == ["Lake Park Dr", "I-75 S", "Airport Blvd"]
+    assert best.steps[1].instruction == "Merge onto I-75 S"
+    assert best.steps[1].notes == ["Parts of this road may be closed at certain times or days"]
     # Delay goes to the congested step; step times add up to the route's traffic time.
     assert sum(s.duration_s for s in best.steps) == pytest.approx(2400)
     assert best.steps[0].duration_s < best.steps[1].duration_s - 420
@@ -235,7 +237,8 @@ def test_pilot_case_loads():
 
 
 def test_run_case_uses_stored_payload(tmp_path, monkeypatch, google_payload):
-    monkeypatch.setattr(cases, "TRUTH_DIR", tmp_path)
+    monkeypatch.setenv("OPENNAV_DATA_DIR", str(tmp_path))
+    tmp_path = tmp_path / "ground_truth"
     case = cases.Case.load("smyrna-to-atl")
     stored = tmp_path / case.id / "google__20261111T185500Z.json"
     stored.parent.mkdir(parents=True)
@@ -250,3 +253,10 @@ def test_run_case_uses_stored_payload(tmp_path, monkeypatch, google_payload):
     assert res.request.departure == datetime(2026, 11, 18, 8, 0, tzinfo=ET)
     rows = {name: ok for name, _, _, ok in cases.compare_to_observed(res, case.observed)}
     assert rows["duration_min"] and rows["summary"] and rows["warning"] and rows["alternates"]
+
+
+def test_data_dir_override(monkeypatch, tmp_path):
+    monkeypatch.setenv("OPENNAV_DATA_DIR", str(tmp_path))
+    assert cases.truth_dir() == tmp_path / "ground_truth"
+    monkeypatch.delenv("OPENNAV_DATA_DIR")
+    assert cases.ROOT not in cases.data_dir().parents  # never inside the repo by default

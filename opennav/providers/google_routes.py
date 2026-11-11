@@ -127,7 +127,10 @@ class GoogleRoutesProvider(RoutingProvider):
         for leg in r.get("legs", []):
             for s in leg.get("steps", []):
                 nav = s.get("navigationInstruction", {})
-                text = nav.get("instructions", "").replace("\n", " ")
+                # First line is the instruction; later lines are notes such as
+                # "Restricted usage road" or "Destination will be on the right".
+                lines = [ln.strip() for ln in nav.get("instructions", "").split("\n") if ln.strip()]
+                text = lines[0] if lines else ""
                 static = _seconds(s.get("staticDuration")) or 0.0
                 steps.append(
                     Step(
@@ -137,6 +140,7 @@ class GoogleRoutesProvider(RoutingProvider):
                         static_duration_s=static,
                         maneuver=nav.get("maneuver"),
                         road=traffic.road_from_instruction(text),
+                        notes=lines[1:],
                         geometry=polyline.decode(s.get("polyline", {}).get("encodedPolyline", "")),
                     )
                 )

@@ -50,6 +50,8 @@ def to_text(result: RouteResult, show_steps: bool = True) -> str:
         out.append("Directions:")
         for i, s in enumerate(result.best.steps, 1):
             out.append(f"  {i:>2}. {s.instruction}")
+            for n in s.notes:
+                out.append(f"      ({n})")
             out.append(f"      {fmt_duration(s.duration_s)} ({fmt_distance(s.distance_m)})")
     if result.alternates:
         out.append("")

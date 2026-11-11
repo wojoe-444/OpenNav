@@ -30,6 +30,7 @@ class Step:
     static_duration_s: float | None = None  # free-flow duration, if provider gives it
     maneuver: str | None = None
     road: str | None = None
+    notes: list[str] = field(default_factory=list)  # extra lines, e.g. "Restricted usage road"
     geometry: list[tuple[float, float]] = field(default_factory=list)  # (lat, lon)
 
 

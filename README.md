@@ -25,14 +25,25 @@ opennav/
   cases.py           named test cases + stored provider responses + reference checks
   render.py          text panel, GeoJSON, standalone Leaflet map
   cli.py             `opennav` command
-cases/               test case definitions
-ground_truth/        raw provider responses, one per case (committed, re-parsed offline)
+cases/               test case definitions (committed)
 ```
 
 Every backend maps its answer into the same model, so adding Valhalla,
 GraphHopper or our own traffic model means writing one provider class.
 Fetching and parsing are separate: a paid API is called once per test case,
-the raw response is saved under `ground_truth/`, and later runs re-parse it.
+the raw response is saved locally, and later runs re-parse it.
+
+Raw provider responses are **never committed**. They live in your app data
+folder, under `ground_truth/<case_id>/`:
+
+| OS      | Default location                                  |
+|---------|---------------------------------------------------|
+| Windows | `%APPDATA%\opennav\ground_truth`                  |
+| macOS   | `~/Library/Application Support/opennav/ground_truth` |
+| Linux   | `~/.local/share/opennav/ground_truth`             |
+
+Set `OPENNAV_DATA_DIR` to use a different folder (for example a separate
+private repo).
 
 ## Usage
 
