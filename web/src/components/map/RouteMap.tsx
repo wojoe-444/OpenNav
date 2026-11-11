@@ -63,10 +63,13 @@ export const BASEMAPS = {
 } as const
 export type BasemapId = keyof typeof BASEMAPS
 
-const ATTRIBUTION =
-  '<a href="https://openfreemap.org" target="_blank">OpenFreeMap</a> &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors'
 // Dark mode for styles without a dark variant: invert and dim, so routes keep their contrast.
 const DARK_FILTER = 'invert(1) hue-rotate(180deg) brightness(0.9) contrast(0.9) saturate(0.4)'
+
+/** Fit without animation: a zoom animation racing the GL layer's start leaves it blank. */
+function refit(m: L.Map, b: L.LatLngBounds) {
+  if (m.getSize().x > 0 && m.getSize().y > 0) m.fitBounds(b, { padding: [40, 40], maxZoom: 17, animate: false })
+}
 
 /** Resolve "var(--series-1)" to a color Leaflet's SVG renderer accepts. */
 function cssColor(c: string): string {
@@ -83,6 +86,10 @@ export function RouteMap({ lines, pins = [], fit, fitKey, sync, syncId = 'map', 
   const map = useRef<L.Map | null>(null)
   const tiles = useRef<L.Layer | null>(null)
   const group = useRef<L.LayerGroup | null>(null)
+  // Last programmatic fit, re-applied when the container resizes (e.g. the
+  // first layout after a reload) until the reviewer pans or zooms by hand.
+  const lastFit = useRef<L.LatLngBounds | null>(null)
+  const userMoved = useRef(false)
   const [theme] = useTheme()
   const syncRef = useRef(sync)
   useLayoutEffect(() => {
@@ -99,10 +106,19 @@ export function RouteMap({ lines, pins = [], fit, fitKey, sync, syncId = 'map', 
       if (s) s.set({ center: m.getCenter(), zoom: m.getZoom(), from: syncId })
     })
     map.current = m
-    const ro = new ResizeObserver(() => m.invalidateSize())
-    ro.observe(el.current)
+    const markUser = () => {
+      userMoved.current = true
+    }
+    const node = el.current
+    for (const ev of ['mousedown', 'wheel', 'touchstart', 'keydown'] as const) node.addEventListener(ev, markUser, { passive: true })
+    const ro = new ResizeObserver(() => {
+      m.invalidateSize({ animate: false })
+      if (lastFit.current && !userMoved.current) refit(m, lastFit.current)
+    })
+    ro.observe(node)
     return () => {
       ro.disconnect()
+      for (const ev of ['mousedown', 'wheel', 'touchstart', 'keydown'] as const) node.removeEventListener(ev, markUser)
       m.remove()
       map.current = null
     }
@@ -121,8 +137,20 @@ export function RouteMap({ lines, pins = [], fit, fitKey, sync, syncId = 'map', 
         maxZoom: 19,
       }).addTo(m)
     } else {
-      tiles.current = maplibreGL({ style: url, attribution: ATTRIBUTION } as never).addTo(m)
+      const gl = maplibreGL({ style: url } as never)
+      tiles.current = gl.addTo(m)
+      // The GL map can come up blank when it starts during the first layout or a
+      // zoom animation; once its style is in, resync it with Leaflet's view.
+      gl.getMaplibreMap().once('load', () => {
+        if (map.current !== m || tiles.current !== gl) return
+        m.invalidateSize({ animate: false })
+        gl.getMaplibreMap().resize()
+        ;(gl as unknown as { _update(): void })._update()
+      })
     }
+    // A fresh attribution control, so a removed basemap's credit goes with it.
+    m.attributionControl?.remove()
+    m.attributionControl = L.control.attribution().addTo(m)
     // Invert only when the style has no dark variant of its own.
     const pane = m.getPane('tilePane')
     if (pane) pane.style.filter = dark && b.dark === b.light ? DARK_FILTER : ''
@@ -156,7 +184,9 @@ export function RouteMap({ lines, pins = [], fit, fitKey, sync, syncId = 'map', 
   useEffect(() => {
     const m = map.current
     if (!m || !fit || fit.length === 0) return
-    m.fitBounds(L.latLngBounds(fit), { padding: [40, 40], maxZoom: 17 })
+    lastFit.current = L.latLngBounds(fit)
+    userMoved.current = false
+    refit(m, lastFit.current)
   }, [fitKey]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
