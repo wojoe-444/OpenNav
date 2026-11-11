@@ -41,12 +41,13 @@ interface RouteMapProps {
   className?: string
 }
 
-const TILES = {
-  light: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
-  dark: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
-}
-const ATTRIBUTION =
-  '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+// OpenStreetMap's own tiles: no API key, fine for one person's review use
+// (https://operations.osmfoundation.org/policies/tiles/). CARTO's basemaps now
+// answer keyless requests with an "API key required" placeholder image.
+const TILE_URL = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png'
+const ATTRIBUTION = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+// Dark mode: the same tiles, inverted and desaturated, so routes keep their contrast.
+const DARK_FILTER = 'invert(1) hue-rotate(180deg) brightness(0.9) contrast(0.9) saturate(0.4)'
 
 /** Resolve "var(--series-1)" to a color Leaflet's SVG renderer accepts. */
 function cssColor(c: string): string {
@@ -55,8 +56,8 @@ function cssColor(c: string): string {
 }
 
 /**
- * A Leaflet map of route polylines on a CARTO basemap (light or dark with the
- * app theme). Imperative Leaflet inside one component, so pages just pass data.
+ * A Leaflet map of route polylines on an OpenStreetMap basemap (dimmed in dark
+ * mode). Imperative Leaflet inside one component, so pages just pass data.
  */
 export function RouteMap({ lines, pins = [], fit, fitKey, sync, syncId = 'map', className }: RouteMapProps) {
   const el = useRef<HTMLDivElement>(null)
@@ -92,11 +93,9 @@ export function RouteMap({ lines, pins = [], fit, fitKey, sync, syncId = 'map', 
     const m = map.current
     if (!m) return
     tiles.current?.remove()
-    tiles.current = L.tileLayer(theme === 'dark' ? TILES.dark : TILES.light, {
-      attribution: ATTRIBUTION,
-      subdomains: 'abcd',
-      maxZoom: 20,
-    }).addTo(m)
+    tiles.current = L.tileLayer(TILE_URL, { attribution: ATTRIBUTION, maxZoom: 19 }).addTo(m)
+    const pane = m.getPane('tilePane')
+    if (pane) pane.style.filter = theme === 'dark' ? DARK_FILTER : ''
   }, [theme])
 
   useEffect(() => {

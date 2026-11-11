@@ -48,7 +48,7 @@ opennav calibrate                       # refit engine/params.json to all stored
 ## Visual review: `opennav serve`
 
 ```bash
-opennav serve                 # http://localhost:8765, opens a browser tab
+opennav serve                 # http://localhost:8765 (or the next free port), opens a browser tab
 opennav serve --warm smyrna-to-atl --port 9000 --no-browser
 ```
 
