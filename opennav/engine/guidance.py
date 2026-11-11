@@ -203,7 +203,7 @@ class Guidance:
         """Angles of the other drivable exits at the intersection (for keep/fork wording)."""
         g = self.g
         node = g.dst[e_in]
-        if not hasattr(self, "_out_by_node"):
+        if not hasattr(self, "_out_start"):
             order = np.argsort(g.src, kind="stable")
             counts = np.bincount(g.src, minlength=g.n_nodes)
             self._out_start = np.concatenate([[0], np.cumsum(counts)])
