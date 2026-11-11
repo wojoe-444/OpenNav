@@ -206,15 +206,25 @@ function LayerCard({
   basemap: BasemapId
   setBasemap: (b: BasemapId) => void
 }) {
-  const [open, setOpen] = useState(true)
+  // Starts collapsed so it doesn't cover the route; remembered per browser.
+  const [open, setOpenState] = useState(() => localStorage.getItem('opennav.layersOpen') === '1')
+  const setOpen = (v: boolean) => {
+    localStorage.setItem('opennav.layersOpen', v ? '1' : '0')
+    setOpenState(v)
+  }
   return (
-    <div className="absolute right-3 bottom-6 z-[500] w-64 rounded-lg border bg-card/95 text-sm shadow-elevation-2 backdrop-blur">
-      <button type="button" onClick={() => setOpen(!open)} className="flex w-full items-center gap-2 px-3 py-2 font-medium">
+    <div className="absolute right-3 bottom-6 z-[500] rounded-lg border bg-card/95 text-sm shadow-elevation-2 backdrop-blur">
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        aria-expanded={open}
+        className={cn('flex items-center gap-2 px-3 py-2 font-medium', open ? 'w-64' : 'w-auto')}
+      >
         <Layers className="size-4" />
         Layers
       </button>
       {open && (
-        <ul className="flex flex-col gap-2 border-t px-3 py-2">
+        <ul className="flex w-64 flex-col gap-2 border-t px-3 py-2">
           {(Object.keys(LAYER_LABEL) as LayerKey[]).map((k) => (
             <li key={k} className="flex items-center gap-2">
               {k === 'divergence' ? (
