@@ -65,3 +65,14 @@ def test_static_falls_back_to_index(api_server):
 def test_module_scripts_get_a_javascript_type(api_server):
     with urllib.request.urlopen(f"{api_server}/assets/app.js") as r:
         assert r.headers["Content-Type"].startswith("text/javascript")
+
+
+def test_bind_skips_a_busy_port():
+    busy = server.bind("127.0.0.1", 0, server.make_handler(server.Api()))
+    port = busy.server_address[1]
+    try:
+        other = server.bind("127.0.0.1", port, server.make_handler(server.Api()))
+        assert other.server_address[1] != port
+        other.server_close()
+    finally:
+        busy.server_close()

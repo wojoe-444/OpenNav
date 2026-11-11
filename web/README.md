@@ -31,7 +31,7 @@ commit it with every UI change. `npm run lint` runs oxlint.
 | `src/modules/compare/panels/` | Tabs of the Official vs modeled page |
 | `src/modules/client.ts` | `useQuery`: loads API data, keeps old data while refetching |
 | `src/lib/api.ts` | Typed calls to the Python API; shapes mirror `opennav/viewer/compare.py` |
-| `src/components/map/RouteMap.tsx` | Leaflet map of polylines and pins (CARTO basemap, follows light/dark) |
+| `src/components/map/RouteMap.tsx` | Leaflet map of polylines and pins (OpenStreetMap tiles, dimmed in dark mode) |
 | `src/components/ui/`, `layout/`, `theme/`, `src/lib/` | Taken from MonoRail |
 
 ## Adding a view

@@ -16,6 +16,7 @@ from __future__ import annotations
 import json
 import mimetypes
 import re
+import sys
 import threading
 import webbrowser
 from http import HTTPStatus
@@ -141,9 +142,27 @@ def make_handler(api: Api, static_dir: Path = STATIC) -> type[BaseHTTPRequestHan
     return Handler
 
 
+class _Server(ThreadingHTTPServer):
+    # On Windows SO_REUSEADDR lets a second server bind a port that is already in
+    # use, so requests could go to the other app. Fail instead, and try the next port.
+    allow_reuse_address = sys.platform != "win32"
+    daemon_threads = True
+
+
+def bind(host: str, port: int, handler, tries: int = 20) -> ThreadingHTTPServer:
+    """Bind to `port`, or the next free port after it (another app may hold 8765)."""
+    for p in range(port, port + tries):
+        try:
+            return _Server((host, p), handler)
+        except OSError:
+            if p == port:
+                print(f"port {port} is in use, trying the next ones")
+    raise OSError(f"no free port in {port}-{port + tries - 1}; pass --port")
+
+
 def serve(host: str = "127.0.0.1", port: int = 8765, open_browser: bool = True, warm: str | None = None) -> None:
     api = Api()
-    httpd = ThreadingHTTPServer((host, port), make_handler(api))
+    httpd = bind(host, port, make_handler(api))
     url = f"http://{'localhost' if host in ('127.0.0.1', '0.0.0.0') else host}:{httpd.server_address[1]}/"
     print(f"OpenNav viewer on {url}  (data: {data_dir()})  Ctrl+C to stop")
     if not (STATIC / "index.html").is_file():
