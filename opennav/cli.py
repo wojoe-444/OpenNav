@@ -5,6 +5,7 @@
   opennav case list
   opennav score [CASE ...] [-v]          compare our engine with stored Google responses
   opennav data build [--region atlanta]  download OSM road data (Overture) and build the graph
+  opennav serve [--port 8765]            local web app: official vs modeled routes, for visual review
 """
 
 from __future__ import annotations
@@ -85,8 +86,19 @@ def main(argv: list[str] | None = None) -> int:
     db.add_argument("--refresh", action="store_true", help="re-download the road data")
     db.add_argument("--addresses", action="store_true", help="also download address points for geocoding")
 
+    sv = sub.add_parser("serve", help="local web viewer: official vs modeled routes")
+    sv.add_argument("--port", type=int, default=8765)
+    sv.add_argument("--host", default="127.0.0.1", help="interface to bind (default: this machine only)")
+    sv.add_argument("--no-browser", action="store_true", help="do not open a browser tab")
+    sv.add_argument("--warm", metavar="CASE", help="run the model for this case at startup")
+
     args = ap.parse_args(argv)
     try:
+        if args.cmd == "serve":
+            from .viewer.server import serve
+            serve(args.host, args.port, open_browser=not args.no_browser, warm=args.warm)
+            return 0
+
         if args.cmd == "score":
             from .bench import run_all
             from .providers import OpenNavProvider

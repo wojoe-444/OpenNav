@@ -45,6 +45,30 @@ opennav score -v                        # compare with every stored Google respo
 opennav calibrate                       # refit engine/params.json to all stored cases
 ```
 
+## Visual review: `opennav serve`
+
+```bash
+opennav serve                 # http://localhost:8765, opens a browser tab
+opennav serve --warm smyrna-to-atl --port 9000 --no-browser
+```
+
+A local web app for comparing the official (Google) answer with our model,
+case by case. The **Official vs modeled** page draws both answers and their
+alternates on one map (or on two synced maps side by side), marks where the
+recommended paths split, and has tabs for the numbers (time, free-flow time,
+distance, roads, warnings, traffic notes), every route and how they pair up,
+the turn-by-turn steps in two columns (click a step to see it on the map),
+and the score metric by metric. **Re-run model** recomputes our side after an
+engine or params change. The URL keeps the page state
+(`#/compare?case=smyrna-to-atl&tab=steps&map=split`).
+
+It binds to 127.0.0.1 only and reads ground truth from the local data dir, so
+nothing leaves the machine. Only Python is needed to run it: the built web app
+ships in `opennav/viewer/static/`. The source is the React app in `web/`
+(see [web/README.md](web/README.md)); it is structured like
+[MonoRail](https://github.com/wojoe-444/MonoRail) and adding a view is a new
+module or panel.
+
 ### Scoring against ground truth
 
 `opennav score` runs our engine on every case that has a stored Google response
@@ -76,7 +100,9 @@ opennav/
   traffic.py         congestion by road, per-step delay estimates, route comparison notes
   cases.py           named test cases + stored provider responses + reference checks
   render.py          text panel, GeoJSON, standalone Leaflet map
+  viewer/            `opennav serve`: comparison payloads, local HTTP + JSON API, built web app
   cli.py             `opennav` command
+web/                 React review app (Vite, Tailwind, shadcn/ui), builds into opennav/viewer/static
 cases/               test case definitions (committed)
 ```
 

@@ -17,3 +17,6 @@ opennav = "opennav.cli:main"
 
 [tool.setuptools.packages.find]
 include = ["opennav*"]
+
+[tool.setuptools.package-data]
+opennav = ["engine/params.json", "viewer/static/**/*"]

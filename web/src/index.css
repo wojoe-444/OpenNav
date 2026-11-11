@@ -1,0 +1,247 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "@fontsource-variable/inter";
+@import "@fontsource-variable/jetbrains-mono";
+
+@custom-variant dark (&:is(.dark *));
+
+/*
+ * MonoRail color system
+ * ---------------------
+ * The look and the color schemes come from the Bot Dashboard in
+ * wojoe-444/MC-Player. A scheme ("palette") is a few parameters in
+ * src/lib/palettes.ts that expand into every token below, for light and dark.
+ * Status colors (success / warning / info / destructive) keep their hues in
+ * every palette, each with a solid and a soft (tinted surface) variant. Chart
+ * series are fixed and not part of a palette. All tokens are OKLCH.
+ */
+:root {
+  --radius: 0.625rem;
+
+  /*
+   * Defaults: the "Sand & Ink" palette (src/lib/palettes.ts). lib/theme.ts
+   * overwrites these on <html> with the palette the user picked, so edit
+   * palettes.ts, not these values, to change a scheme.
+   */
+  --background: oklch(0.975 0.007 85);
+  --foreground: oklch(0.23 0.0145 85);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.23 0.0145 85);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.23 0.0145 85);
+  --primary: oklch(0.42 0.07 80);
+  --primary-foreground: oklch(0.985 0.01 80);
+  --primary-soft: oklch(0.95 0.0126 80);
+  --primary-soft-foreground: oklch(0.38 0.056 80);
+  --secondary: oklch(0.955 0.015 85);
+  --secondary-foreground: oklch(0.3 0.009 85);
+  --muted: oklch(0.945 0.012 85);
+  --muted-foreground: oklch(0.5 0.0045 85);
+  --accent: oklch(0.945 0.0105 80);
+  --accent-foreground: oklch(0.36 0.0455 80);
+  --highlight: oklch(0.6 0.12 230);
+  --highlight-foreground: oklch(0.99 0.01 230);
+  --highlight-soft: oklch(0.95 0.03 230);
+  --highlight-soft-foreground: oklch(0.42 0.09 230);
+  --border: oklch(0.915 0.012 85);
+  --input: oklch(0.9 0.014 85);
+  --ring: oklch(0.6 0.0595 80 / 0.5);
+  --destructive: oklch(0.6 0.22 17);
+  --success: oklch(0.56 0.15 158);
+  --warning: oklch(0.78 0.16 75);
+  --info: oklch(0.58 0.15 235);
+  --success-soft: oklch(0.95 0.035 158);
+  --success-soft-foreground: oklch(0.43 0.11 158);
+  --warning-soft: oklch(0.95 0.035 75);
+  --warning-soft-foreground: oklch(0.43 0.11 75);
+  --info-soft: oklch(0.95 0.035 235);
+  --info-soft-foreground: oklch(0.43 0.11 235);
+  --destructive-soft: oklch(0.95 0.035 17);
+  --destructive-soft-foreground: oklch(0.43 0.11 17);
+  --sidebar: oklch(1 0 0);
+  --sidebar-foreground: oklch(0.38 0.0045 85);
+  --sidebar-muted-foreground: oklch(0.56 0.0045 85);
+  --sidebar-primary: oklch(0.42 0.07 80);
+  --sidebar-primary-foreground: oklch(0.985 0.01 80);
+  --sidebar-accent: oklch(0.955 0.0184 80);
+  --sidebar-accent-foreground: oklch(0.25 0.006 85);
+  --sidebar-border: oklch(0.915 0.012 85);
+  --sidebar-ring: oklch(0.6 0.0595 80 / 0.5);
+
+  /*
+   * Data-viz categorical series, assigned in this fixed order and never cycled.
+   * Validated for color-vision deficiency (adjacent pairs) on the card surface.
+   * Slots 3-5 are under 3:1 on white, so charts always ship legends + tables.
+   */
+  --series-1: #2a78d6;
+  --series-2: #eb6834;
+  --series-3: #1baf7a;
+  --series-4: #eda100;
+  --series-5: #e87ba4;
+  --series-6: #6250d6;
+  --series-other: #a3a9b6;
+  --chart-grid: oklch(0.93 0.008 258);
+  --chart-axis: oklch(0.84 0.012 258);
+}
+
+.dark {
+  --background: oklch(0.165 0.03 85);
+  --foreground: oklch(0.95 0.01 85);
+  --card: oklch(0.205 0.035 85);
+  --card-foreground: oklch(0.95 0.01 85);
+  --popover: oklch(0.22 0.035 85);
+  --popover-foreground: oklch(0.95 0.01 85);
+  --primary: oklch(0.8 0.0595 80);
+  --primary-foreground: oklch(0.16 0.04 80);
+  --primary-soft: oklch(0.3 0.0245 80);
+  --primary-soft-foreground: oklch(0.87 0.028 80);
+  --secondary: oklch(0.27 0.04 85);
+  --secondary-foreground: oklch(0.95 0.01 85);
+  --muted: oklch(0.25 0.035 85);
+  --muted-foreground: oklch(0.7 0.0038 85);
+  --accent: oklch(0.3 0.021 80);
+  --accent-foreground: oklch(0.95 0.03 80);
+  --highlight: oklch(0.74 0.11 230);
+  --highlight-foreground: oklch(0.18 0.03 230);
+  --highlight-soft: oklch(0.3 0.05 230);
+  --highlight-soft-foreground: oklch(0.86 0.07 230);
+  --border: oklch(1 0 0 / 0.09);
+  --input: oklch(1 0 0 / 0.13);
+  --ring: oklch(0.66 0.056 80 / 0.5);
+  --destructive: oklch(0.7 0.19 17);
+  --success: oklch(0.74 0.16 158);
+  --warning: oklch(0.82 0.15 78);
+  --info: oklch(0.74 0.13 232);
+  --success-soft: oklch(0.3 0.05 158);
+  --success-soft-foreground: oklch(0.86 0.1 158);
+  --warning-soft: oklch(0.3 0.05 75);
+  --warning-soft-foreground: oklch(0.86 0.1 75);
+  --info-soft: oklch(0.3 0.05 235);
+  --info-soft-foreground: oklch(0.86 0.1 235);
+  --destructive-soft: oklch(0.3 0.05 17);
+  --destructive-soft-foreground: oklch(0.86 0.1 17);
+  --sidebar: oklch(0.19 0.03 85);
+  --sidebar-foreground: oklch(0.82 0.003 85);
+  --sidebar-muted-foreground: oklch(0.62 0.003 85);
+  --sidebar-primary: oklch(0.8 0.0595 80);
+  --sidebar-primary-foreground: oklch(0.16 0.04 80);
+  --sidebar-accent: oklch(0.27 0.0175 80);
+  --sidebar-accent-foreground: oklch(0.97 0.01 85);
+  --sidebar-border: oklch(1 0 0 / 0.08);
+  --sidebar-ring: oklch(0.66 0.056 80 / 0.5);
+
+  --series-1: #3987e5;
+  --series-2: #d95926;
+  --series-3: #199e70;
+  --series-4: #c98500;
+  --series-5: #d55181;
+  --series-6: #9085e9;
+  --series-other: #5f6676;
+  --chart-grid: oklch(1 0 0 / 7%);
+  --chart-axis: oklch(1 0 0 / 16%);
+}
+
+@theme inline {
+  --font-sans: "Inter Variable", "Segoe UI Variable", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono Variable", ui-monospace, "Cascadia Mono", monospace;
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary-soft: var(--primary-soft);
+  --color-primary-soft-foreground: var(--primary-soft-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-highlight: var(--highlight);
+  --color-highlight-foreground: var(--highlight-foreground);
+  --color-highlight-soft: var(--highlight-soft);
+  --color-highlight-soft-foreground: var(--highlight-soft-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-success-soft-foreground: var(--success-soft-foreground);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-warning-soft-foreground: var(--warning-soft-foreground);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+  --color-info-soft-foreground: var(--info-soft-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-soft: var(--destructive-soft);
+  --color-destructive-soft-foreground: var(--destructive-soft-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-muted-foreground: var(--sidebar-muted-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  /* Elevation steps, neutral so they sit under any palette. Cards rest flat (a hairline ring); these are for raised and overlay surfaces. */
+  --shadow-elevation-1: 0 1px 2px oklch(0.2 0 0 / 0.05), 0 1px 3px oklch(0.2 0 0 / 0.06);
+  --shadow-elevation-2: 0 2px 4px oklch(0.2 0 0 / 0.05), 0 4px 12px oklch(0.2 0 0 / 0.08);
+  --shadow-elevation-3: 0 4px 8px oklch(0.2 0 0 / 0.07), 0 12px 28px oklch(0.2 0 0 / 0.12);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+  html {
+    font-family: var(--font-sans);
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "cv11", "ss01";
+  }
+}
+
+/*
+ * Palette shape and texture (src/lib/palettes.ts sets them on <html>).
+ * pill: fully rounded inputs, buttons and selects, rounder cards (Botanical).
+ * leaf: a faint frond in the bottom of the drawer (Botanical).
+ * leaf-ink: the same frond in green ink, for a light drawer (Botanical Linen).
+ */
+html[data-shape="pill"] {
+  --radius: 0.875rem;
+}
+html[data-shape="pill"] :is([data-slot="input"], [data-slot="button"], [data-slot="native-select"]) {
+  border-radius: 9999px;
+}
+/* The frond: white on a dark or bold drawer, deep green ink on a light one. */
+html[data-texture="leaf"],
+html.dark[data-texture="leaf-ink"] {
+  --leaf-frond: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 440'%3E%3Cpath d='M300 420Q250 200 40 40M295 400Q272 398 255 385M295 400Q314 386 323 367M290 380Q256 378 231 361M290 380Q317 360 328 332M283 361Q241 360 209 340M283 361Q316 334 329 299M277 342Q227 342 189 320M277 342Q314 309 327 268M269 323Q214 325 171 302M269 323Q309 285 323 238M261 304Q201 309 154 285M261 304Q303 262 316 211M252 286Q189 293 138 269M252 286Q295 239 307 185M242 268Q177 277 124 255M242 268Q285 218 296 161M232 250Q166 262 111 241M232 250Q274 198 283 139M221 232Q156 246 100 227M221 232Q262 179 268 120M210 215Q146 231 90 214M210 215Q248 161 252 103M198 198Q136 215 82 200M198 198Q233 144 235 88M185 181Q127 199 75 187M185 181Q216 129 217 76M172 164Q119 183 70 173M172 164Q199 116 198 66M157 148Q110 166 67 158M157 148Q181 103 179 59M143 132Q103 148 65 143M143 132Q162 93 159 54M127 116Q95 130 64 127M127 116Q142 84 138 53M111 100Q88 111 66 109M111 100Q121 77 118 55M94 85Q85 90 75 89M94 85Q98 75 97 65M77 70Q71 73 65 73M77 70Q79 63 78 58M59 55Q53 58 47 58M59 55Q61 48 60 43' fill='none' stroke='white' stroke-width='5' stroke-linecap='round' opacity='.07'/%3E%3C/svg%3E");
+}
+html[data-texture="leaf-ink"]:not(.dark) {
+  --leaf-frond: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 440'%3E%3Cpath d='M300 420Q250 200 40 40M295 400Q272 398 255 385M295 400Q314 386 323 367M290 380Q256 378 231 361M290 380Q317 360 328 332M283 361Q241 360 209 340M283 361Q316 334 329 299M277 342Q227 342 189 320M277 342Q314 309 327 268M269 323Q214 325 171 302M269 323Q309 285 323 238M261 304Q201 309 154 285M261 304Q303 262 316 211M252 286Q189 293 138 269M252 286Q295 239 307 185M242 268Q177 277 124 255M242 268Q285 218 296 161M232 250Q166 262 111 241M232 250Q274 198 283 139M221 232Q156 246 100 227M221 232Q262 179 268 120M210 215Q146 231 90 214M210 215Q248 161 252 103M198 198Q136 215 82 200M198 198Q233 144 235 88M185 181Q127 199 75 187M185 181Q216 129 217 76M172 164Q119 183 70 173M172 164Q199 116 198 66M157 148Q110 166 67 158M157 148Q181 103 179 59M143 132Q103 148 65 143M143 132Q162 93 159 54M127 116Q95 130 64 127M127 116Q142 84 138 53M111 100Q88 111 66 109M111 100Q121 77 118 55M94 85Q85 90 75 89M94 85Q98 75 97 65M77 70Q71 73 65 73M77 70Q79 63 78 58M59 55Q53 58 47 58M59 55Q61 48 60 43' fill='none' stroke='%23345a3c' stroke-width='5' stroke-linecap='round' opacity='.08'/%3E%3C/svg%3E");
+}
+html:is([data-texture="leaf"], [data-texture="leaf-ink"]) [data-slot="sidebar"] {
+  background-image: var(--leaf-frond);
+  background-repeat: no-repeat;
+  background-position: right -64px bottom -48px;
+  background-size: 300px auto;
+}
