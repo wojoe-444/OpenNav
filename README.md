@@ -12,6 +12,53 @@ returns what a maps app shows for that trip:
 - alternate routes
 - route geometry (encoded polyline, GeoJSON, or an HTML map)
 
+## OpenNav engine (our own router)
+
+`--provider opennav` is our own routing engine, built to match Google's answers
+as closely as possible using only open data:
+
+- **Road data:** OpenStreetMap, via the Overture Maps transportation layer
+  (GeoParquet on a public S3 bucket, ODbL). We read only the Parquet row groups
+  that cover the region, over plain HTTPS, so no OSM mirror or Overpass access is
+  needed. `opennav data build --region atlanta` downloads ~450 MB once and builds
+  a ~1M-edge graph in under a minute.
+- **Graph:** one-ways, car access rules (private / destination-only roads are
+  allowed but flagged), turn restrictions, speed limits, route refs (I-285,
+  US-41) and exit signs ("I-85 S toward Columbus").
+- **Routing:** edge-based Dijkstra on the turn graph (exact turn costs and
+  restrictions), via-node alternatives (as in OSRM) filtered for stretch,
+  overlap and local optimality.
+- **Cost model** (`engine/profile.py`): time at the speed limit x factor per road
+  group, per-km arterial delay, turn and intersection delays, and a time-of-day
+  traffic model (rush-hour peaks, metro density, inbound/outbound tidal flow).
+  Parameters are fitted to ground truth by `opennav calibrate` (map-matches each
+  Google route onto our graph and fits per-step free-flow times, then traffic).
+- **Guidance:** Google-style steps ("Turn right onto US-41 S/Cobb Pkwy",
+  "Merge onto I-285 W", "Take the exit for I-85 N toward Airport Domestic"),
+  road summary with Google's disambiguation of alternates, highway and
+  restricted-road warnings.
+
+```bash
+opennav data build --region atlanta     # one time, data goes to the local data dir
+opennav route "33.8976,-84.4945" "33.6392,-84.4430" --provider opennav --depart "wed 08:00"
+opennav score -v                        # compare with every stored Google response
+opennav calibrate                       # refit engine/params.json to all stored cases
+```
+
+### Scoring against ground truth
+
+`opennav score` runs our engine on every case that has a stored Google response
+(same endpoints and departure time) and scores 0-100 on: path overlap with
+Google's route, duration with traffic, free-flow duration, distance, road
+summary, steps (roads named, maneuvers, count), warnings, alternates found, and
+route ranking. Reports go to `<data dir>/reports/`. To add a test case, add
+`cases/<id>.json` and run `opennav case run <id>` once to store Google's answer
+locally.
+
+Geocoding: the scorer uses Google's resolved endpoints so routing is measured
+on its own. `opennav/geocode.py` covers addresses present in Overture's
+address points (City of Atlanta yes, most of Cobb County not yet).
+
 ## Design
 
 ```
@@ -20,7 +67,12 @@ opennav/
   providers/
     base.py          RoutingProvider: fetch_raw() (network) + parse() (pure)
     google_routes.py Google Routes API, used as ground truth while piloting
-    osrm.py          OSRM (OpenStreetMap), the first open source backend
+    osrm.py          OSRM (OpenStreetMap), needs an OSRM server
+    opennav_local.py our own engine as a provider
+  engine/            graph builder, cost/traffic model, search, guidance, map matching
+  data/              Overture download over HTTPS, region registry
+  scoring.py         metrics vs ground truth; bench.py runs all cases
+  calibrate.py       fits engine/params.json to ground truth
   traffic.py         congestion by road, per-step delay estimates, route comparison notes
   cases.py           named test cases + stored provider responses + reference checks
   render.py          text panel, GeoJSON, standalone Leaflet map

@@ -7,7 +7,7 @@ name = "opennav"
 version = "0.1.0"
 description = "Open source routing and traffic analysis"
 requires-python = ">=3.10"
-dependencies = ["requests>=2.28"]
+dependencies = ["requests>=2.28", "numpy>=1.24", "scipy>=1.10", "pyarrow>=14"]
 
 [project.optional-dependencies]
 dev = ["pytest>=7"]
