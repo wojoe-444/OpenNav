@@ -1,0 +1,21 @@
+{
+  "id": "smyrna-to-atl",
+  "origin": "46 Rumson Ct, Smyrna, GA 30080",
+  "destination": "6000 S Terminal Pkwy, Atlanta, GA 30337",
+  "departure": "wed 08:00",
+  "timezone": "America/New_York",
+  "notes": "Pilot case. 'observed' values were read off a Google Maps web screenshot taken with departure 'now' (Nov 2026), so duration is only loosely comparable.",
+  "observed": {
+    "duration_min": 40,
+    "distance_mi": 24.5,
+    "summary": "I-75 S and I-85 S",
+    "traffic_note": "Fastest route now, avoids slowdown on I-285 S.",
+    "warnings": ["This route has restricted usage or private roads."],
+    "min_alternates": 1,
+    "grouped_steps": [
+      {"text": "Get on I-75 S from Lake Park Dr and US-41 S/Cobb Pkwy", "duration_min": 10, "distance_mi": 3.6},
+      {"text": "Follow I-75 S and I-85 S to Airport Blvd in College Park. Take exit 72 from I-85 S", "duration_min": 21, "distance_mi": 19.6},
+      {"text": "Continue on Airport Blvd to your destination in Clayton County", "duration_min": 3, "distance_mi": 1.3}
+    ]
+  }
+}
