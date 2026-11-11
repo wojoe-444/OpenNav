@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useState } from 'react'
 import { Layers, Loader2, RefreshCw } from 'lucide-react'
 
-import { RouteMap, type MapLine, type MapPin, type MapSync } from '@/components/map/RouteMap'
+import { BASEMAPS, RouteMap, type BasemapId, type MapLine, type MapPin, type MapSync } from '@/components/map/RouteMap'
 import { Button } from '@/components/ui/button'
 import { NativeSelect } from '@/components/ui/native-select'
 import { Segmented } from '@/components/ui/segmented'
@@ -62,6 +62,14 @@ export default function ComparePage() {
     modeledAlts: true,
     divergence: true,
   })
+  const [basemap, setBasemapState] = useState<BasemapId>(() => {
+    const v = localStorage.getItem('opennav.basemap')
+    return v && v in BASEMAPS ? (v as BasemapId) : 'muted'
+  })
+  const setBasemap = (b: BasemapId) => {
+    localStorage.setItem('opennav.basemap', b)
+    setBasemapState(b)
+  }
   const [focus, setFocus] = useState<Focus | null>(null)
   const [zoom, setZoom] = useState<{ points: LatLon[]; key: string } | null>(null)
   const zoomTo = useCallback((points: LatLon[]) => setZoom({ points, key: `${Date.now()}` }), [])
@@ -95,6 +103,7 @@ export default function ComparePage() {
                 fitKey={fitKey}
                 sync={sync}
                 syncId={s}
+                basemap={basemap}
               />
               <div className="pointer-events-none absolute top-3 left-14 z-[500] flex items-center gap-2 rounded-md bg-card/90 px-2.5 py-1 text-xs font-medium shadow-elevation-1">
                 <Swatch side={s} />
@@ -103,10 +112,10 @@ export default function ComparePage() {
             </div>
           ))
         ) : (
-          <RouteMap className="h-full w-full" lines={linesFor(SIDES)} pins={pins} fit={fit} fitKey={fitKey} />
+          <RouteMap className="h-full w-full" lines={linesFor(SIDES)} pins={pins} fit={fit} fitKey={fitKey} basemap={basemap} />
         )}
 
-        <LayerCard layers={layers} setLayers={setLayers} />
+        <LayerCard layers={layers} setLayers={setLayers} basemap={basemap} setBasemap={setBasemap} />
         {(cmp.fetching || rerunning) && (
           <div className="absolute top-3 left-1/2 z-[500] flex -translate-x-1/2 items-center gap-2 rounded-full bg-card px-3 py-1.5 text-sm shadow-elevation-2">
             <Loader2 className="size-4 animate-spin" />
@@ -136,7 +145,7 @@ export default function ComparePage() {
                 </option>
               ))}
             </NativeSelect>
-            <Button variant="outline" size="sm" onClick={() => void rerun()} disabled={!data?.official || rerunning} title="Run the model again (after changing the engine or params)">
+            <Button variant="outline" size="sm" onClick={() => void rerun()} disabled={!data || rerunning} title="Run the model again (after changing the engine or params)">
               <RefreshCw className={cn(rerunning && 'animate-spin')} />
               Re-run model
             </Button>
@@ -172,7 +181,7 @@ export default function ComparePage() {
         <div className="min-h-0 flex-1 overflow-y-auto p-4">
           {cases.error && <ErrorBox title="Could not load cases" message={cases.error.message} />}
           {cmp.error && <ErrorBox title="Could not load this case" message={cmp.error.message} />}
-          {data?.official_error && <ErrorBox title="No official answer" message={data.official_error} />}
+          {data?.official_error && <ErrorBox tone="warning" title="No official answer" message={data.official_error} />}
           {data?.modeled_error && (
             <ErrorBox title="The model failed" message={data.modeled_error} detail={data.modeled_traceback} />
           )}
@@ -189,13 +198,17 @@ export default function ComparePage() {
 function LayerCard({
   layers,
   setLayers,
+  basemap,
+  setBasemap,
 }: {
   layers: Record<LayerKey, boolean>
   setLayers: (l: Record<LayerKey, boolean>) => void
+  basemap: BasemapId
+  setBasemap: (b: BasemapId) => void
 }) {
   const [open, setOpen] = useState(true)
   return (
-    <div className="absolute right-3 bottom-6 z-[500] w-56 rounded-lg border bg-card/95 text-sm shadow-elevation-2 backdrop-blur">
+    <div className="absolute right-3 bottom-6 z-[500] w-64 rounded-lg border bg-card/95 text-sm shadow-elevation-2 backdrop-blur">
       <button type="button" onClick={() => setOpen(!open)} className="flex w-full items-center gap-2 px-3 py-2 font-medium">
         <Layers className="size-4" />
         Layers
@@ -215,6 +228,23 @@ function LayerCard({
               <Switch id={`layer-${k}`} checked={layers[k]} onCheckedChange={(v) => setLayers({ ...layers, [k]: v })} />
             </li>
           ))}
+          <li className="flex items-center gap-2 border-t pt-2">
+            <label htmlFor="basemap" className="flex-1 text-muted-foreground">
+              Background
+            </label>
+            <NativeSelect
+              id="basemap"
+              className="w-32"
+              value={basemap}
+              onChange={(e) => setBasemap(e.target.value as BasemapId)}
+            >
+              {(Object.keys(BASEMAPS) as BasemapId[]).map((b) => (
+                <option key={b} value={b}>
+                  {BASEMAPS[b].label}
+                </option>
+              ))}
+            </NativeSelect>
+          </li>
         </ul>
       )}
     </div>
@@ -240,9 +270,26 @@ function FocusBar({ data, focus, clear }: { data: Comparison; focus: Focus; clea
   )
 }
 
-function ErrorBox({ title, message, detail }: { title: string; message: string; detail?: string }) {
+function ErrorBox({
+  title,
+  message,
+  detail,
+  tone = 'error',
+}: {
+  title: string
+  message: string
+  detail?: string
+  tone?: 'error' | 'warning'
+}) {
   return (
-    <div className="mb-4 rounded-lg border border-destructive/30 bg-destructive-soft p-3 text-sm text-destructive-soft-foreground">
+    <div
+      className={cn(
+        'mb-4 rounded-lg border p-3 text-sm',
+        tone === 'warning'
+          ? 'border-warning/40 bg-warning-soft text-warning-soft-foreground'
+          : 'border-destructive/30 bg-destructive-soft text-destructive-soft-foreground',
+      )}
+    >
       <div className="font-medium">{title}</div>
       <div className="mt-1 break-words">{message}</div>
       {detail && (

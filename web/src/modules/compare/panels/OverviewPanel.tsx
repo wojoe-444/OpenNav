@@ -85,7 +85,7 @@ export function OverviewPanel({ data, setFocus, zoomTo }: PanelProps) {
 
       <Section title="Where the routes split">
         {!div ? (
-          <Empty>Run the model to see where the paths differ.</Empty>
+          <Empty>{data.official ? "Run the model to see where the paths differ." : "No official answer to compare against."}</Empty>
         ) : div.modeled_only.length + div.official_only.length === 0 ? (
           <Empty>The recommended paths match end to end (within 25 m).</Empty>
         ) : (

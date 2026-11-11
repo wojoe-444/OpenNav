@@ -117,18 +117,26 @@ def _ll(text: str | None):
     return lat, lon
 
 
-def run_opennav(case: Case, truth: RouteResult) -> RouteResult:
-    """Our engine, on Google's resolved endpoints and departure (as `opennav score` does)."""
+def run_opennav(case: Case, truth: RouteResult | None) -> RouteResult:
+    """Our engine. With ground truth: on Google's resolved endpoints and departure,
+    as `opennav score` does. Without: on the case's own points (origin_point /
+    destination_point, else our geocoder) at the case's departure."""
     from ..providers import OpenNavProvider
     prov = OpenNavProvider()
-    o, d = _ll(truth.origin_resolved), _ll(truth.destination_resolved)
-    req = RouteRequest(origin=case.origin, destination=case.destination, departure=truth.request.departure)
+    if truth is not None:
+        o, d = _ll(truth.origin_resolved), _ll(truth.destination_resolved)
+        departure = truth.request.departure
+    else:
+        o = _ll(case.origin_point) or prov.resolve(case.origin)
+        d = _ll(case.destination_point) or prov.resolve(case.destination)
+        departure = case.request().departure
+    req = RouteRequest(origin=case.origin, destination=case.destination, departure=departure)
     return prov.route_points(prov.engine([o, d]), req, o, d)
 
 
 # Modeled sources the viewer can compare against the official answer. Add an
 # entry to compare another engine or configuration; the UI lists them all.
-MODELS: dict[str, Callable[[Case, RouteResult], RouteResult]] = {
+MODELS: dict[str, Callable[[Case, RouteResult | None], RouteResult]] = {
     "opennav": run_opennav,
 }
 
@@ -179,14 +187,17 @@ class Comparer:
         case = Case.load(case_id)
         payload: dict[str, Any] = {"case": asdict(case), "model": model, "models": list(MODELS)}
         found = latest_truth(case, GoogleRoutesProvider())
+        truth = None
         if found is None:
+            # Still run the model, so its routes can be reviewed on their own.
             payload["official"] = None
-            payload["official_error"] = (f"No stored Google response for this case. Run `opennav case run {case_id}` "
-                                         f"once, or copy it into the data dir's ground_truth/{case_id}/.")
-            return payload
-        truth, _, path = found
-        payload["official"] = result_json(truth)
-        payload["official_file"] = path.name
+            payload["official_error"] = (f"No stored Google response for this case, so there is no score. Run "
+                                         f"`opennav case run {case_id}` once, or copy the file into the data dir's "
+                                         f"ground_truth/{case_id}/.")
+        else:
+            truth, _, path = found
+            payload["official"] = result_json(truth)
+            payload["official_file"] = path.name
         t0 = time.perf_counter()
         try:
             ours = MODELS[model](case, truth)
@@ -197,6 +208,8 @@ class Comparer:
             return payload
         payload["model_seconds"] = round(time.perf_counter() - t0, 2)
         payload["modeled"] = result_json(ours)
+        if truth is None:
+            return payload
         payload["score"] = score_fn(ours, truth).to_dict()
         payload["score_weights"] = WEIGHTS
         payload["divergence"] = {

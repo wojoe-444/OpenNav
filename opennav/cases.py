@@ -58,6 +58,10 @@ class Case:
     departure: str = "now"
     timezone: str = "America/New_York"
     notes: str = ""
+    # Optional "lat,lon" for each end, used when no ground truth gives resolved
+    # endpoints (our geocoder does not cover every address yet).
+    origin_point: str | None = None
+    destination_point: str | None = None
     observed: dict[str, Any] = field(default_factory=dict)
 
     @classmethod

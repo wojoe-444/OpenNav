@@ -41,7 +41,11 @@ def _get(url, method="GET"):
         return e.code, e.read()
 
 
-def test_api_without_ground_truth(api_server):
+def test_api_without_ground_truth(api_server, monkeypatch):
+    def no_graph(case, truth):
+        assert truth is None
+        raise RuntimeError("no road graph in this test")
+    monkeypatch.setitem(compare.MODELS, "opennav", no_graph)
     status, body = _get(f"{api_server}/api/cases")
     assert status == 200
     cases = json.loads(body)
@@ -50,6 +54,7 @@ def test_api_without_ground_truth(api_server):
     status, body = _get(f"{api_server}/api/cases/smyrna-to-atl")
     d = json.loads(body)
     assert status == 200 and d["official"] is None and "opennav case run" in d["official_error"]
+    assert "no road graph" in d["modeled_error"] and "score" not in d
 
     assert _get(f"{api_server}/api/cases/nope")[0] == 404
     assert _get(f"{api_server}/api/cases/smyrna-to-atl/rerun")[0] == 404  # POST only
